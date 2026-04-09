@@ -46,7 +46,17 @@ A scheduled GitHub Actions workflow installs the Claude Code CLI, authenticates 
 gh repo fork vdsmon/claude-warmup --clone
 ```
 
-### 2. Generate an OAuth token
+### 2. Enable Actions on your fork
+
+GitHub disables scheduled workflows on forks by default. After forking:
+
+1. Open your fork on GitHub.
+2. Click the **Actions** tab.
+3. Click **"I understand my workflows, go ahead and enable them"** if prompted.
+
+Scheduled runs will not fire until you do this.
+
+### 3. Generate an OAuth token
 
 On a machine where you're logged into Claude Code:
 
@@ -56,7 +66,7 @@ claude setup-token
 
 Opens a browser for OAuth. Gives you a token starting with `sk-ant-oat01-...`, good for about a year.
 
-### 3. Store it as a secret
+### 4. Store it as a secret
 
 ```bash
 gh secret set CLAUDE_OAUTH_TOKEN
@@ -64,36 +74,38 @@ gh secret set CLAUDE_OAUTH_TOKEN
 
 Paste when prompted.
 
-### 4. Set your schedule
+### 5. Set your schedule
 
-Default is weekdays at 9:15 UTC.
+Default is weekdays at 8:00 UTC (3:00 AM CDT / 2:00 AM CST).
 
 GitHub Actions requires `on.schedule.cron` to be a literal value in the workflow file, so changing the schedule means editing `.github/workflows/warmup.yml` and updating this line:
 
 ```yml
-- cron: '15 9 * * 1-5'
+- cron: '0 8 * * 1-5'
 ```
 
 That's a standard cron expression in UTC. Common conversions:
 
-Need help generating one? Try [crontab.guru](https://crontab.guru/#15_9_*_*_1-5).
+Need help generating one? Try [crontab.guru](https://crontab.guru/#0_8_*_*_1-5).
 
-| Timezone | 6:15 AM local in UTC | Cron |
+| Timezone | 3:00 AM local in UTC | Cron |
 | --- | --- | --- |
-| US Pacific (UTC-7) | 1:15 PM | `15 13 * * 1-5` |
-| US Eastern (UTC-4) | 10:15 AM | `15 10 * * 1-5` |
-| US Central (UTC-5) | 11:15 AM | `15 11 * * 1-5` |
-| Central Europe (UTC+2) | 4:15 AM | `15 4 * * 1-5` |
-| Brazil BRT (UTC-3) | 9:15 AM | `15 9 * * 1-5` |
-| India IST (UTC+5:30) | 12:45 AM | `45 0 * * 1-5` |
-| Japan JST (UTC+9) | 9:15 PM prev day | `15 21 * * 0-4` |
-| Australia AEST (UTC+10) | 8:15 PM prev day | `15 20 * * 0-4` |
+| US Pacific (UTC-7/PDT) | 10:00 AM | `0 10 * * 1-5` |
+| US Pacific (UTC-8/PST) | 11:00 AM | `0 11 * * 1-5` |
+| US Central (UTC-5/CDT) | 8:00 AM | `0 8 * * 1-5` |
+| US Central (UTC-6/CST) | 9:00 AM | `0 9 * * 1-5` |
+| US Eastern (UTC-4/EDT) | 7:00 AM | `0 7 * * 1-5` |
+| US Eastern (UTC-5/EST) | 8:00 AM | `0 8 * * 1-5` |
+| Central Europe (UTC+2/CEST) | 1:00 AM | `0 1 * * 1-5` |
+| Central Europe (UTC+1/CET) | 2:00 AM | `0 2 * * 1-5` |
+| Brazil BRT (UTC-3) | 6:00 AM | `0 6 * * 1-5` |
+| India IST (UTC+5:30) | 9:30 PM prev day | `30 21 * * 0-4` |
+| Japan JST (UTC+9) | 6:00 PM prev day | `0 18 * * 0-4` |
+| Australia AEST (UTC+10) | 5:00 PM prev day | `0 17 * * 0-4` |
 
 Pick something 2-4 hours before you usually start working (really depends on your usage pattern).
 
-### 5. Test it
-
-If this is a fresh fork, open the repo's `Actions` tab once and enable workflows if GitHub asks.
+### 6. Test it
 
 Optional but useful: set your fork as the default GitHub CLI target in this clone.
 
@@ -115,7 +127,7 @@ gh run view --log --repo <your-user>/claude-warmup
 
 Check the logs. You should see a Haiku response or a rate-limit message. Both mean it worked.
 
-### 6. Verify
+### 7. Verify
 
 Next morning, run `/usage` in Claude Code. The session reset time should match your anchored window.
 
@@ -136,11 +148,14 @@ Some things about how Claude Code's 5-hour window actually works that aren't wel
 **What if I'm already rate-limited?** Still works. The request reaches Anthropic's servers either way, and it still anchors the window.
 
 **Can I run this locally instead?**
-Yeah. `claude -p "hi" --model haiku --no-session-persistence` in a cron or macOS launchd does the same thing. GitHub Actions is just easier because your machine doesn't need to be awake at 6 AM.
+Yeah. `claude -p "hi" --model haiku --no-session-persistence` in a cron or macOS launchd does the same thing. GitHub Actions is just easier because your machine doesn't need to be awake at 3 AM.
 
 **Token expiry?** About a year. Set a reminder.
 
 ## Troubleshooting
+
+**Scheduled runs never fire**
+GitHub disables scheduled workflows on forks by default. Open the **Actions** tab on your fork and enable workflows if prompted. You must do this before the first scheduled run will execute.
 
 **`workflow not found on the default branch`**
 The workflow file is missing from your fork's default branch, or GitHub Actions has not been enabled for the fork yet. Push `.github/workflows/warmup.yml` to your fork's default branch, then open the `Actions` tab once and enable workflows if prompted.
